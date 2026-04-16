@@ -1,0 +1,49 @@
+{
+  "_comment": "إعدادات H.A.A — لا تضع مفاتيح API هنا، استخدم GitHub Secrets",
+
+  "engine": {
+    "version": "1.0.0",
+    "name": "H.A.A",
+    "author": "Hussain Ali"
+  },
+
+  "ai": {
+    "provider": "anthropic",
+    "model": "claude-opus-4-5",
+    "max_tokens": 8000,
+    "temperature": 0.7,
+    "fallback_model": "claude-3-5-sonnet-20241022"
+  },
+
+  "github": {
+    "default_branch": "main",
+    "private_repos": false,
+    "add_topics": true,
+    "create_setup_issue": true,
+    "rate_limit_delay_ms": 300
+  },
+
+  "notifications": {
+    "telegram": {
+      "enabled": true,
+      "parse_mode": "Markdown"
+    },
+    "gmail": {
+      "enabled": false,
+      "comment": "فعّل هذا بإضافة GMAIL_USER و GMAIL_APP_PASSWORD في Secrets"
+    }
+  },
+
+  "triggers": {
+    "issue_prefix": "[HAA]",
+    "telegram_command": "/build",
+    "dispatch_events": ["haa_build_request", "haa_telegram_request"]
+  },
+
+  "limits": {
+    "max_files_per_project": 30,
+    "max_file_size_kb": 500,
+    "max_project_name_length": 50,
+    "request_timeout_seconds": 120
+  }
+}

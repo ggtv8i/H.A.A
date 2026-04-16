@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>H.A.A — لوحة التحكم</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── CSS Variables ───────────────────────────────────────── */
+    :root {
+      --bg:          #050810;
+      --surface:     #0c1022;
+      --card:        #111827;
+      --border:      #1e2d4a;
+      --accent:      #00d4ff;
+      --accent2:     #7c3aed;
+      --accent3:     #10b981;
+      --danger:      #ef4444;
+      --warning:     #f59e0b;
+      --text:        #e2e8f0;
+      --muted:       #64748b;
+      --glow:        rgba(0, 212, 255, 0.15);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Tajawal', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Background Grid ─────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Scanline overlay ────────────────────────────────────── */
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .wrapper { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 0 20px 60px; }
+
+    /* ── Header ──────────────────────────────────────────────── */
+    header {
+      padding: 48px 0 32px;
+      text-align: center;
+      position: relative;
+    }
+
+    .logo-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .logo-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      background: rgba(0,212,255,0.08);
+      border: 1px solid rgba(0,212,255,0.3);
+      padding: 4px 12px;
+      border-radius: 4px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      animation: pulse-border 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-border {
+      0%, 100% { border-color: rgba(0,212,255,0.3); box-shadow: none; }
+      50% { border-color: rgba(0,212,255,0.8); box-shadow: 0 0 16px rgba(0,212,255,0.2); }
+    }
+
+    h1 {
+      font-size: clamp(36px, 8vw, 64px);
+      font-weight: 900;
+      letter-spacing: -2px;
+      line-height: 1;
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--accent2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 300;
+      letter-spacing: 1px;
+    }
+
+    /* ── Status Bar ──────────────────────────────────────────── */
+    .status-bar {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin: 24px 0 40px;
+      flex-wrap: wrap;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent3);
+      box-shadow: 0 0 8px var(--accent3);
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    .dot.warn { background: var(--warning); box-shadow: 0 0 8px var(--warning); }
+    .dot.off  { background: var(--muted); box-shadow: none; animation: none; }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+    }
+
+    /* ── Sections ────────────────────────────────────────────── */
+    section { margin-bottom: 32px; }
+
+    .section-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
+    }
+
+    /* ── Config Grid ─────────────────────────────────────────── */
+    .config-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 600px) { .config-grid { grid-template-columns: 1fr; } }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      letter-spacing: 0.5px;
+    }
+
+    input[type="text"], input[type="password"] {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      padding: 10px 14px;
+      width: 100%;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.08);
+    }
+
+    input::placeholder { color: var(--muted); opacity: 0.5; }
+
+    /* ── Main Input ──────────────────────────────────────────── */
+    .request-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .request-wrap::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0,212,255,0.02) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .request-wrap:focus-within {
+      border-color: rgba(0,212,255,0.5);
+      box-shadow: 0 0 30px rgba(0,212,255,0.08);
+    }
+
+    textarea {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-family: 'Tajawal', sans-serif;
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.7;
+      min-height: 100px;
+      outline: none;
+      resize: none;
+      width: 100%;
+    }
+
+    textarea::placeholder { color: var(--muted); opacity: 0.4; }
+
+    .request-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .char-count {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* ── Buttons ─────────────────────────────────────────────── */
+    .btn-primary {
+      align-items: center;
+      background: linear-gradient(135deg, var(--accent2), #4f46e5);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      font-family: 'Tajawal', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      gap: 8px;
+      padding: 12px 28px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.2s;
+    }
+
+    .btn-primary::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 100%);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(124,58,237,0.4); }
+    .btn-primary:hover::after { opacity: 1; }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* ── Example Cards ───────────────────────────────────────── */
+    .examples-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+
+    .example-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      padding: 14px 16px;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .example-card:hover {
+      border-color: rgba(0,212,255,0.4);
+      background: rgba(0,212,255,0.04);
+      transform: translateY(-2px);
+    }
+
+    .example-icon { font-size: 22px; }
+    .example-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .example-desc { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+    /* ── Log Terminal ────────────────────────────────────────── */
+    .terminal {
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .terminal-header {
+      background: #111;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .td-red   { background: #ff5f57; }
+    .td-yellow{ background: #febc2e; }
+    .td-green { background: #28c840; }
+
+    .terminal-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+      margin-right: auto;
+    }
+
+    .terminal-body {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      max-height: 280px;
+      overflow-y: auto;
+      padding: 16px 20px;
+    }
+
+    .terminal-body:empty::before {
+      content: '$ في انتظار الطلب...';
+      color: var(--muted);
+      opacity: 0.4;
+    }
+
+    .log-line { display: block; margin-bottom: 2px; }
+    .log-info   { color: #64748b; }
+    .log-ok     { color: #10b981; }
+    .log-error  { color: #ef4444; }
+    .log-warn   { color: #f59e0b; }
+    .log-accent { color: var(--accent); }
+    .log-white  { color: #fff; font-weight: 600; }
+
+    /* ── History ─────────────────────────────────────────────── */
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .history-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      animation: slide-in 0.3s ease;
+    }
+
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateX(20px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .history-text { font-size: 14px; flex: 1; }
+    .history-time { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .history-status {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .hs-ok   { background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+    .hs-err  { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+    .hs-wait { background: rgba(245,158,11,0.1); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+
+    /* ── Repo Link Box ───────────────────────────────────────── */
+    .result-box {
+      background: rgba(16,185,129,0.05);
+      border: 1px solid rgba(16,185,129,0.3);
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: none;
+      animation: fade-up 0.4s ease;
+    }
+    .result-box.show { display: block; }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-box h3 { color: #10b981; margin-bottom: 8px; }
+    .repo-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--accent);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      padding: 10px 14px;
+      text-decoration: none;
+      transition: border-color 0.2s;
+    }
+    .repo-link:hover { border-color: var(--accent); }
+
+    /* ── Loading Spinner ─────────────────────────────────────── */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Progress Bar ────────────────────────────────────────── */
+    .progress-wrap {
+      display: none;
+      margin-top: 16px;
+    }
+    .progress-wrap.show { display: block; }
+    .progress-track {
+      background: var(--border);
+      border-radius: 4px;
+      height: 4px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      height: 100%;
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+    .progress-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 6px;
+      text-align: center;
+    }
+
+    /* ── Tooltip ─────────────────────────────────────────────── */
+    [data-tip] { position: relative; cursor: help; }
+    [data-tip]:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      right: 50%;
+      transform: translateX(50%);
+      background: #1e2d4a;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 12px;
+      padding: 6px 10px;
+      white-space: nowrap;
+      z-index: 100;
+      font-family: 'Tajawal', sans-serif;
+    }
+
+    /* ── Scrollbar ───────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <header>
+    <div class="logo-line">
+      <span class="logo-badge">v1.0.0</span>
+      <span class="logo-badge">Serverless</span>
+    </div>
+    <h1>H.A.A</h1>
+    <p class="subtitle">Hussain Ali Automation · حوّل أفكارك إلى مشاريع جاهزة</p>
+
+    <div class="status-bar">
+      <div class="status-item">
+        <span class="dot" id="dot-engine"></span>
+        <span id="status-engine">GitHub Actions</span>
+      </div>
+      <div class="status-item">
+        <span class="dot" id="dot-ai"></span>
+        <span id="status-ai">Claude AI</span>
+      </div>
+      <div class="status-item">
+        <span class="dot" id="dot-gh"></span>
+        <span id="status-gh">GitHub API</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Config Section -->
+  <section>
+    <div class="section-label">⚙️ الإعدادات</div>
+    <div class="config-grid">
+      <div class="field-group">
+        <label data-tip="مالك المستودع / اسم المستخدم">GitHub Username</label>
+        <input type="text" id="gh-user" placeholder="مثال: hussain-ali" autocomplete="off">
+      </div>
+      <div class="field-group">
+        <label data-tip="اسم مستودع H.A.A">Repository Name</label>
+        <input type="text" id="gh-repo" placeholder="مثال: HAA" autocomplete="off">
+      </div>
+      <div class="field-group">
+        <label data-tip="GitHub Personal Access Token (repo + workflow)">GitHub PAT</label>
+        <input type="password" id="gh-pat" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off">
+      </div>
+      <div class="field-group">
+        <label data-tip="اسم المشروع (اختياري - يُولَّد تلقائياً)">Project Name</label>
+        <input type="text" id="project-name" placeholder="مثال: my-telegram-bot" autocomplete="off">
+      </div>
+    </div>
+    <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+      <button class="btn-primary" onclick="saveConfig()" style="padding: 8px 20px; font-size: 13px;">
+        💾 حفظ الإعدادات
+      </button>
+      <span id="save-status" style="font-size: 12px; color: var(--muted); align-self: center;"></span>
+    </div>
+  </section>
+
+  <!-- Request Section -->
+  <section>
+    <div class="section-label">🚀 طلب جديد</div>
+    <div class="request-wrap">
+      <textarea
+        id="request-input"
+        placeholder="صف مشروعك بالتفصيل... مثال: أريد بوت تيليجرام بلغة Python يستقبل الصور ويضغطها ويرسلها للمستخدم"
+        oninput="updateCharCount()"
+        onkeydown="handleKeydown(event)"
+        rows="4"
+      ></textarea>
+      <div class="request-footer">
+        <span class="char-count" id="char-count">0 حرف</span>
+        <button class="btn-primary" id="submit-btn" onclick="submitRequest()">
+          <span>⚡ ابنِ المشروع</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
+      <div class="progress-label" id="progress-label">جارٍ الإرسال...</div>
+    </div>
+
+    <!-- Result Box -->
+    <div class="result-box" id="result-box" style="margin-top: 16px;">
+      <h3>✅ تم إطلاق البناء!</h3>
+      <p style="color: var(--muted); font-size: 14px; margin: 8px 0 12px;">
+        GitHub Actions يعمل الآن على بناء مشروعك. ستصل إشارة على التيليجرام عند الانتهاء.
+      </p>
+      <a id="workflow-link" href="#" target="_blank" class="repo-link">
+        🔍 عرض سجل البناء
+      </a>
+    </div>
+  </section>
+
+  <!-- Examples -->
+  <section>
+    <div class="section-label">💡 أمثلة سريعة</div>
+    <div class="examples-grid">
+      <div class="example-card" onclick="useExample(this)">
+        <span class="example-icon">🤖</span>
+        <span class="example-title">بوت تيليجرام</span>
+        <span class="example-desc">بوت Python يرد على الرسائل ويدعم الأوامر</span>
+        <span class="example-data" style="display:none">أريد بوت تيليجرام بلغة Python يرد على الرسائل النصية ويدعم أوامر /start /help ويحتوي على نظام قاعدة بيانات SQLite لحفظ المستخدمين</span>
+      </div>
+      <div class="example-card" onclick="useExample(this)">
+        <span class="example-icon">🌐</span>
+        <span class="example-title">REST API</span>
+        <span class="example-desc">API بلغة Python/FastAPI مع مصادقة JWT</span>
+        <span class="example-data" style="display:none">أريد REST API بلغة Python باستخدام FastAPI يدعم مصادقة JWT وعمليات CRUD كاملة لإدارة المستخدمين مع توثيق Swagger</span>
+      </div>
+      <div class="example-card" onclick="useExample(this)">
+        <span class="example-icon">🕷️</span>
+        <span class="example-title">Web Scraper</span>
+        <span class="example-desc">سكريبت Python لجمع البيانات</span>
+        <span class="example-data" style="display:none">أريد سكريبت Python لجمع البيانات من مواقع الويب باستخدام BeautifulSoup وRequests مع حفظ النتائج في CSV وJSON</span>
+      </div>
+      <div class="example-card" onclick="useExample(this)">
+        <span class="example-icon">📊</span>
+        <span class="example-title">لوحة بيانات</span>
+        <span class="example-desc">Dashboard HTML/JS تفاعلية</span>
+        <span class="example-data" style="display:none">أريد لوحة بيانات تفاعلية بلغة HTML وJavaScript مع رسوم بيانية Chart.js وجدول بيانات قابل للفرز والتصفية</span>
+      </div>
+      <div class="example-card" onclick="useExample(this)">
+        <span class="example-icon">⏰</span>
+        <span class="example-title">تذكير يومي</span>
+        <span class="example-desc">بوت يرسل تذكيرات يومية</span>
+        <span class="example-data" style="display:none">أريد بوت تيليجرام Python يرسل تذكيرات يومية مجدولة مع قدرة المستخدم على إضافة وحذف التذكيرات وتحديد الوقت</span>
+      </div>
+      <div class="example-card" onclick="useExample(this)">
+        <span class="example-icon">💰</span>
+        <span class="example-title">متتبع أسعار</span>
+        <span class="example-desc">يراقب أسعار العملات والأسهم</span>
+        <span class="example-data" style="display:none">أريد سكريبت Python يتتبع أسعار العملات المشفرة من API وينبهني عبر تيليجرام عند وصول السعر لحد معين</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Terminal Log -->
+  <section>
+    <div class="section-label">📟 سجل النشاط</div>
+    <div class="terminal">
+      <div class="terminal-header">
+        <span class="terminal-dot td-red"></span>
+        <span class="terminal-dot td-yellow"></span>
+        <span class="terminal-dot td-green"></span>
+        <span class="terminal-title">H.A.A Engine Log</span>
+        <button onclick="clearLog()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;font-family:'IBM Plex Mono',monospace;">CLEAR</button>
+      </div>
+      <div class="terminal-body" id="log-body"></div>
+    </div>
+  </section>
+
+  <!-- History -->
+  <section>
+    <div class="section-label">📜 سجل الطلبات</div>
+    <div class="history-list" id="history-list">
+      <p style="color: var(--muted); font-size: 13px; text-align: center; padding: 20px;">لا توجد طلبات سابقة في هذه الجلسة.</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+// ────────────────────────────────────────────────────────────
+// State
+// ────────────────────────────────────────────────────────────
+let isBuilding = false;
+const history  = [];
+
+// ────────────────────────────────────────────────────────────
+// Init
+// ────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  loadConfig();
+  addLog('info', 'H.A.A Dashboard جاهز. أدخل إعداداتك وابدأ.');
+  addLog('info', 'نسخة 1.0.0 — Powered by Claude AI');
+});
+
+// ────────────────────────────────────────────────────────────
+// Config
+// ────────────────────────────────────────────────────────────
+function saveConfig() {
+  const user = document.getElementById('gh-user').value.trim();
+  const repo = document.getElementById('gh-repo').value.trim();
+  const pat  = document.getElementById('gh-pat').value.trim();
+  if (!user || !repo || !pat) {
+    showSaveStatus('⚠️ أدخل Username و Repo و PAT', 'warn');
+    return;
+  }
+  sessionStorage.setItem('haa_user', user);
+  sessionStorage.setItem('haa_repo', repo);
+  sessionStorage.setItem('haa_pat',  pat);
+  showSaveStatus('✅ تم الحفظ', 'ok');
+  addLog('ok', `تم حفظ الإعدادات: ${user}/${repo}`);
+  checkStatuses();
+}
+
+function loadConfig() {
+  document.getElementById('gh-user').value = sessionStorage.getItem('haa_user') || '';
+  document.getElementById('gh-repo').value = sessionStorage.getItem('haa_repo') || '';
+  document.getElementById('gh-pat').value  = sessionStorage.getItem('haa_pat')  || '';
+  checkStatuses();
+}
+
+function showSaveStatus(msg, type) {
+  const el = document.getElementById('save-status');
+  el.textContent = msg;
+  el.style.color = type === 'ok' ? '#10b981' : '#f59e0b';
+  setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+// ────────────────────────────────────────────────────────────
+// Status Check
+// ────────────────────────────────────────────────────────────
+async function checkStatuses() {
+  const pat  = sessionStorage.getItem('haa_pat') || '';
+  const user = sessionStorage.getItem('haa_user') || '';
+  const repo = sessionStorage.getItem('haa_repo') || '';
+
+  if (!pat || !user || !repo) return;
+
+  setDot('dot-engine', 'warn');
+  setDot('dot-gh', 'warn');
+
+  try {
+    const resp = await fetch(`https://api.github.com/repos/${user}/${repo}`, {
+      headers: { Authorization: `Bearer ${pat}` }
+    });
+    if (resp.ok) {
+      setDot('dot-engine', 'on');
+      setDot('dot-gh', 'on');
+      addLog('ok', `اتصال GitHub ✓ — ${user}/${repo}`);
+    } else {
+      setDot('dot-engine', 'off');
+      setDot('dot-gh', 'off');
+      addLog('warn', `لا يمكن الوصول للمستودع (${resp.status}) — تحقق من PAT والأذونات`);
+    }
+  } catch (e) {
+    setDot('dot-engine', 'off');
+    setDot('dot-gh', 'off');
+    addLog('error', `خطأ في الاتصال: ${e.message}`);
+  }
+}
+
+function setDot(id, state) {
+  const dot = document.getElementById(id);
+  dot.className = 'dot' + (state === 'off' ? ' off' : state === 'warn' ? ' warn' : '');
+}
+
+// ────────────────────────────────────────────────────────────
+// Submit
+// ────────────────────────────────────────────────────────────
+function handleKeydown(e) {
+  if (e.key === 'Enter' && e.ctrlKey) submitRequest();
+}
+
+async function submitRequest() {
+  if (isBuilding) return;
+
+  const request = document.getElementById('request-input').value.trim();
+  const user    = sessionStorage.getItem('haa_user');
+  const repo    = sessionStorage.getItem('haa_repo');
+  const pat     = sessionStorage.getItem('haa_pat');
+  const pname   = document.getElementById('project-name').value.trim();
+
+  if (!request) { addLog('warn', 'أدخل وصف المشروع أولاً'); return; }
+  if (!user || !repo || !pat) {
+    addLog('warn', 'أدخل وأحفظ الإعدادات أولاً (GitHub Username + Repo + PAT)');
+    return;
+  }
+
+  isBuilding = true;
+  setBuilding(true);
+
+  addLog('white', `⚡ إطلاق طلب جديد...`);
+  addLog('info', `الطلب: ${request.substring(0, 60)}...`);
+  setProgress(10, 'التحقق من الاتصال...');
+
+  // توليد اسم المشروع
+  let projectName = pname;
+  if (!projectName) {
+    const slug = request.replace(/[^a-zA-Z\u0600-\u06FF\s]/g, '').substring(0, 30).trim().replace(/\s+/g, '-');
+    projectName = `haa-${slug.replace(/[^a-zA-Z0-9\-]/g, '-').toLowerCase() || 'project'}`;
+  }
+
+  try {
+    setProgress(30, 'إرسال الطلب إلى GitHub Actions...');
+    addLog('info', `إرسال Repository Dispatch → ${user}/${repo}`);
+
+    const resp = await fetch(`https://api.github.com/repos/${user}/${repo}/dispatches`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${pat}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28'
+      },
+      body: JSON.stringify({
+        event_type: 'haa_build_request',
+        client_payload: { request, project_name: projectName }
+      })
+    });
+
+    setProgress(70, 'GitHub Actions يعالج الطلب...');
+
+    if (resp.status === 204) {
+      setProgress(100, 'تم الإطلاق بنجاح!');
+      addLog('ok', `✅ تم إطلاق البناء بنجاح!`);
+      addLog('accent', `📦 اسم المشروع: ${projectName}`);
+      addLog('info', `🔗 تابع: https://github.com/${user}/${repo}/actions`);
+
+      // Show result
+      const box = document.getElementById('result-box');
+      const wfLink = document.getElementById('workflow-link');
+      wfLink.href = `https://github.com/${user}/${repo}/actions`;
+      box.classList.add('show');
+
+      // Add to history
+      addHistoryItem(request, 'ok');
+
+      document.getElementById('request-input').value = '';
+      document.getElementById('project-name').value = '';
+      updateCharCount();
+
+      setTimeout(() => {
+        document.getElementById('result-box').classList.remove('show');
+        setProgress(0, '');
+        document.getElementById('progress-wrap').classList.remove('show');
+      }, 8000);
+
+    } else {
+      const errText = await resp.text();
+      addLog('error', `❌ خطأ ${resp.status}: ${errText.substring(0, 100)}`);
+      if (resp.status === 401) addLog('warn', 'تحقق من صلاحيات PAT (repo + workflow)');
+      if (resp.status === 404) addLog('warn', 'المستودع غير موجود أو PAT لا يملك صلاحية الوصول');
+      setProgress(0, '');
+      document.getElementById('progress-wrap').classList.remove('show');
+      addHistoryItem(request, 'err');
+    }
+  } catch (err) {
+    addLog('error', `خطأ في الاتصال: ${err.message}`);
+    setProgress(0, '');
+    document.getElementById('progress-wrap').classList.remove('show');
+    addHistoryItem(request, 'err');
+  }
+
+  isBuilding = false;
+  setBuilding(false);
+}
+
+// ────────────────────────────────────────────────────────────
+// UI Helpers
+// ────────────────────────────────────────────────────────────
+function setBuilding(state) {
+  const btn = document.getElementById('submit-btn');
+  if (state) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span> <span>جارٍ البناء...</span>`;
+    document.getElementById('progress-wrap').classList.add('show');
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = `<span>⚡ ابنِ المشروع</span>`;
+  }
+}
+
+function setProgress(val, label) {
+  document.getElementById('progress-bar').style.width = val + '%';
+  document.getElementById('progress-label').textContent = label;
+}
+
+function updateCharCount() {
+  const len = document.getElementById('request-input').value.length;
+  document.getElementById('char-count').textContent = `${len} حرف`;
+}
+
+function addLog(type, msg) {
+  const body = document.getElementById('log-body');
+  const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+  const line = document.createElement('span');
+  line.className = `log-line log-${type}`;
+  line.textContent = `[${time}] ${msg}`;
+  body.appendChild(line);
+  body.scrollTop = body.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('log-body').innerHTML = '';
+}
+
+function addHistoryItem(text, status) {
+  const list = document.getElementById('history-list');
+  const empty = list.querySelector('p');
+  if (empty) empty.remove();
+
+  const item = document.createElement('div');
+  item.className = 'history-item';
+
+  const statuses = { ok: 'hs-ok', err: 'hs-err', wait: 'hs-wait' };
+  const labels   = { ok: '✅ نجح', err: '❌ فشل', wait: '⏳ جارٍ' };
+  const time = new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
+
+  item.innerHTML = `
+    <span class="history-text">${text.substring(0, 60)}${text.length > 60 ? '...' : ''}</span>
+    <span class="history-time">${time}</span>
+    <span class="history-status ${statuses[status]}">${labels[status]}</span>
+  `;
+  list.prepend(item);
+}
+
+function useExample(card) {
+  const data = card.querySelector('.example-data').textContent;
+  document.getElementById('request-input').value = data;
+  updateCharCount();
+  document.getElementById('request-input').focus();
+  addLog('info', `مثال محمّل: ${card.querySelector('.example-title').textContent}`);
+}
+</script>
+</body>
+</html>
